@@ -21,10 +21,10 @@ def filtrar_escolas(df:pd.DataFrame):
     #mantém SOMENTE escolas em atividade
     df = df[df['TP_SITUACAO_FUNCIONAMENTO'] == 1]
 
-    df.to_csv(f'{output_path}/filtrado.csv',index=False)
     agregar_variaveis(df)
 
 def agregar_variaveis(df:pd.DataFrame):
-    print(df)
+    df['recode_energia'] = np.where(df['IN_ENERGIA_GERADOR_FOSSIL'] == 0 | df['IN_ENERGIA_RENOVAVEL'] == 0,1,0)
+    df.to_csv(f'{output_path}/filtrado.csv',index=False)
 
 selecionar_variaveis()
