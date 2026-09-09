@@ -25,6 +25,7 @@ def filtrar_escolas(df:pd.DataFrame):
 
     agregar_variaveis(df)
 
+#Substituir por np.loc()?
 def agregar_variaveis(df:pd.DataFrame):
     print("Agregando Variáveis...")
     df['recode_abastecimento_agua'] = np.where(
@@ -45,25 +46,45 @@ def agregar_variaveis(df:pd.DataFrame):
         (df['IN_LIXO_SERVICO_COLETA'] == 1) | (df['IN_LIXO_QUEIMA'] == 1) | (df['IN_LIXO_ENTERRA'] == 1) | (df['IN_LIXO_DESTINO_FINAL_PUBLICO'] == 1)
         ,1,0
     )
-
+    
     df['recode_tratamento_lixo'] = np.where(
             ((df['IN_TRATAMENTO_LIXO_SEPARACAO'] == 1) | (df['IN_TRATAMENTO_LIXO_REUTILIZA'] == 1) | (df['IN_TRATAMENTO_LIXO_RECICLAGEM'] == 1)) & (df['IN_TRATAMENTO_LIXO_INEXISTENTE']==0)
             ,1,0
         )
 
+    df['recode_patio'] = np.where(
+        (df['IN_PATIO_COBERTO'] == 1) | (df['IN_PATIO_DESCOBERTO'] == 1)
+        ,1,0
+    )
+    
+
     df['recode_internet'] = np.where(
         (df['IN_INTERNET'] == 1) | (df['IN_INTERNET_ALUNOS'] == 1) | (df['IN_INTERNET_ADMINISTRATIVO'] == 1) | (df['IN_INTERNET_APRENDIZAGEM'] == 1) | (df['IN_INTERNET_COMUNIDADE'] == 1)
         ,1,0)
-    calcular_parametros(df)
+
+    remover_colunas(df)
     
+#Talvez seja preferível MANTER as colunas, apenas ocultá-las
+def remover_colunas(df: pd.DataFrame):
+    df = df.drop(columns=['IN_AGUA_REDE_PUBLICA','IN_AGUA_POCO_ARTESIANO','IN_AGUA_CACIMBA','IN_AGUA_FONTE_RIO','IN_AGUA_CARRO_PIPA','IN_AGUA_INEXISTENTE',
+                          'IN_ENERGIA_GERADOR_FOSSIL','IN_ENERGIA_RENOVAVEL','IN_ENERGIA_REDE_PUBLICA','IN_ENERGIA_INEXISTENTE','IN_ESGOTO_REDE_PUBLICA',
+                          'IN_ESGOTO_FOSSA_SEPTICA','IN_ESGOTO_FOSSA_COMUM','IN_ESGOTO_FOSSA','IN_ESGOTO_INEXISTENTE','IN_TRATAMENTO_LIXO_SEPARACAO','IN_TRATAMENTO_LIXO_REUTILIZA',
+                          'IN_TRATAMENTO_LIXO_RECICLAGEM','IN_TRATAMENTO_LIXO_INEXISTENTE','IN_INTERNET','IN_INTERNET_ALUNOS','IN_INTERNET_ADMINISTRATIVO','IN_INTERNET_APRENDIZAGEM',
+                          'IN_INTERNET_COMUNIDADE','IN_PATIO_COBERTO','IN_PATIO_DESCOBERTO'])
 
-def calcular_parametros(df: pd.DataFrame):
-    print("Parametros :3 ")
+    tratar_planilha(df)
 
-    exportar_csv(df)
+def tratar_planilha(df:pd.DataFrame):
+    print("Trantando a planilha...")
 
-def exportar_csv(df:pd.DataFrame):
+    df_transposed = df.T
+    df_transposed = df_transposed[18:]
+
+    exportar_csv(df,df_transposed)
+
+def exportar_csv(df:pd.DataFrame, df_transposed:pd.DataFrame):
     print("Exportando...")
     df.to_csv(f'{output_path}/filtrado.csv',index=False)
+    df_transposed.to_csv(f'{output_path}/transposed.csv')
 
 selecionar_variaveis()
