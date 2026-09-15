@@ -1,6 +1,6 @@
 import numpy as np
 import pandas as pd
-from girth import threepl_mml, ability_eap
+from girth import twopl_mml, ability_eap
 
 censo_path = 'bases/censo.csv'
 var_path = 'bases/variaveis_censo.txt'
@@ -66,25 +66,67 @@ def agregar_variaveis(df:pd.DataFrame):
     
 #Talvez seja preferível MANTER as colunas, apenas ocultá-las
 def remover_colunas(df: pd.DataFrame):
-    df = df.drop(columns=['IN_AGUA_REDE_PUBLICA','IN_AGUA_POCO_ARTESIANO','IN_AGUA_CACIMBA','IN_AGUA_FONTE_RIO','IN_AGUA_CARRO_PIPA','IN_AGUA_INEXISTENTE',
+    #separa dados de contextualização com os dados binário para calcular
+    df_contexto = df.loc[:,['NU_ANO_CENSO','TP_SITUACAO_FUNCIONAMENTO']]
+    df_calc = df.loc[:,'IN_AGUA_POTAVEL':]
+
+
+    df_calc = df_calc.drop(columns=['IN_AGUA_REDE_PUBLICA','IN_AGUA_POCO_ARTESIANO','IN_AGUA_CACIMBA','IN_AGUA_FONTE_RIO','IN_AGUA_CARRO_PIPA','IN_AGUA_INEXISTENTE',
                           'IN_ENERGIA_GERADOR_FOSSIL','IN_ENERGIA_RENOVAVEL','IN_ENERGIA_REDE_PUBLICA','IN_ENERGIA_INEXISTENTE','IN_ESGOTO_REDE_PUBLICA',
                           'IN_ESGOTO_FOSSA_SEPTICA','IN_ESGOTO_FOSSA_COMUM','IN_ESGOTO_FOSSA','IN_ESGOTO_INEXISTENTE','IN_TRATAMENTO_LIXO_SEPARACAO','IN_TRATAMENTO_LIXO_REUTILIZA',
                           'IN_TRATAMENTO_LIXO_RECICLAGEM','IN_TRATAMENTO_LIXO_INEXISTENTE','IN_INTERNET','IN_INTERNET_ALUNOS','IN_INTERNET_ADMINISTRATIVO','IN_INTERNET_APRENDIZAGEM',
                           'IN_INTERNET_COMUNIDADE','IN_PATIO_COBERTO','IN_PATIO_DESCOBERTO'])
 
-    tratar_planilha(df)
+    df_calc = df_calc.fillna(0).astype(int)
+    calcular_parametros(df_calc)
 
-def tratar_planilha(df:pd.DataFrame):
-    print("Trantando a planilha...")
 
-    df_transposed = df.T
-    df_transposed = df_transposed[18:]
+def calcular_parametros(df:pd.DataFrame):
+    #calcula os parametros de Dificuldade e Discriminação para cada questão
+    print("Calculando parâmetros...")
 
-    exportar_csv(df,df_transposed)
+    #verifica e remove colunas sem variancia nenhuma (quebra a lib)
+    variancia = df.std(axis=0)
+    validas = variancia[variancia > 0].index
+    df = df[validas]
 
-def exportar_csv(df:pd.DataFrame, df_transposed:pd.DataFrame):
+    respostas = df.values.T
+
+    #Amostragem pra esse krl n crashar
+    total_escolas = respostas.shape[1]
+    tam_amostra = min(5000, total_escolas)
+    
+
+    np.random.seed(42)
+    amostragem = np.random.choice(total_escolas, size=tam_amostra, replace=False)
+    resp_amostra = respostas[:,amostragem]
+
+    #PLACEHOLDER
+    estimativas = twopl_mml(resp_amostra)
+
+    disc = estimativas['Discrimination']
+    dif = estimativas['Difficulty']
+
+    df_params = pd.DataFrame({
+        'Questao': validas,
+        'Discriminação': disc,
+        'Dificuldade': dif
+    })
+
+    print("Exportando parâmetros A e B por questão...")
+    df_params.to_csv(f'{output_path}/parametros.csv',index=False)
+
+    calcular_estimativas(df)
+
+#Fica quabrando virando array 1D T .T
+def calcular_estimativas(df:pd.DataFrame):
+    print("Calculando estimativas para cada questão...")
+     
+
+    exportar_csv(df)
+
+def exportar_csv(df:pd.DataFrame):
     print("Exportando...")
     df.to_csv(f'{output_path}/filtrado.csv',index=False)
-    df_transposed.to_csv(f'{output_path}/transposed.csv')
 
 selecionar_variaveis()
