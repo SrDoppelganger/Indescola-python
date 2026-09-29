@@ -16,7 +16,7 @@ def validar(file_path: str) -> ResultadoValidacao:
         return falha("vazio", "Arquivo vazio(zero bytes).")
 
     try:
-        texto = raw.decode("utf-8-sig")
+        texto = raw.decode("latin-1")
     except UnicodeDecodeError:
         return falha("estrutural", "Arquivo invalido como texto e nao pode ser lido como CSV.")
 
