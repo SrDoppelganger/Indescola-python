@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>File Validator</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <main class="panel">
+    <header class="panel__header">
+      <h1>Validador de Arquivo</h1>
+      <p class="subtitle">
+        Checa se um arquivo é um CSV válido e não vazio antes de ir para a pipeline.
+      </p>
+    </header>
+
+    <section class="picker">
+      <button id="choose-btn" class="choose-btn" type="button">
+        Escolha um arquivo&hellip;
+      </button>
+      <span id="picker-hint" class="picker-hint">Atualmente suporta: .csv</span>
+    </section>
+
+    <section class="pipeline" aria-label="Validation pipeline">
+      <div class="pipeline__step" id="step-structural" data-state="idle">
+        <span class="pipeline__index">1</span>
+        <span class="pipeline__label">Estrutural</span>
+        <span class="pipeline__status"></span>
+      </div>
+      <div class="pipeline__connector"></div>
+      <div class="pipeline__step" id="step-empty" data-state="idle">
+        <span class="pipeline__index">2</span>
+        <span class="pipeline__label">Vazio</span>
+        <span class="pipeline__status"></span>
+      </div>
+      <div class="pipeline__connector"></div>
+      <div class="pipeline__step" id="step-pipeline" data-state="idle">
+        <span class="pipeline__index">3</span>
+        <span class="pipeline__label">pipeline</span>
+        <span class="pipeline__status"></span>
+      </div>
+    </section>
+
+    <section id="result" class="result" hidden>
+      <div class="result__row">
+        <span class="result__key">arquivo</span>
+        <span class="result__value" id="result-file"></span>
+      </div>
+      <div class="result__row">
+        <span class="result__key">status</span>
+        <span class="result__value" id="result-status"></span>
+      </div>
+      <div class="result__row result__row--reason">
+        <span class="result__key">razão</span>
+        <span class="result__value" id="result-reason"></span>
+      </div>
+    </section>
+
+    <p id="empty-state" class="empty-state">
+      Nenhum arquivo checado ainda. Escolha um para ver o resultado aqui.
+    </p>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>

@@ -1,0 +1,113 @@
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 20px;
+  font-family: Arial, sans-serif;
+  font-size: 14px;
+  background: #eee;
+  color: #222;
+}
+
+.panel {
+  max-width: 500px;
+  margin: 40px auto;
+  padding: 20px;
+  background: white;
+  border: 1px solid #ccc;
+}
+
+h1 {
+  margin-top: 0;
+  font-size: 20px;
+}
+
+.subtitle {
+  margin-bottom: 20px;
+  color: #666;
+}
+
+.picker {
+  margin-bottom: 20px;
+}
+
+.choose-btn {
+  padding: 8px 12px;
+  cursor: pointer;
+}
+
+.picker-hint {
+  margin-left: 10px;
+  color: #666;
+}
+
+.pipeline {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 20px;
+}
+
+.pipeline__step {
+  flex: 1;
+  padding: 10px;
+  border: 1px solid #ccc;
+}
+
+.pipeline__connector {
+  display: none;
+}
+
+.pipeline__index,
+.pipeline__status {
+  color: #666;
+  font-size: 12px;
+}
+
+.pipeline__label {
+  font-weight: bold;
+}
+
+.pipeline__step[data-state="pass"] {
+  border-color: green;
+}
+
+.pipeline__step[data-state="fail"] {
+  border-color: red;
+}
+
+.result {
+  padding-top: 15px;
+  border-top: 1px solid #ccc;
+}
+
+.result__row {
+  display: flex;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.result__key {
+  width: 60px;
+  color: #666;
+}
+
+.result__value {
+  word-break: break-word;
+}
+
+.result__value--pass {
+  color: green;
+}
+
+.result__value--fail {
+  color: red;
+}
+
+.empty-state {
+  margin-top: 15px;
+  padding-top: 15px;
+  border-top: 1px solid #ccc;
+  color: #666;
+}
