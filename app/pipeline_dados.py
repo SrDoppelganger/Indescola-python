@@ -1,15 +1,12 @@
 #Pipeline de processamento backends
-def processar(censo_path: str):
-    selecionar_variaveis(censo_path)
+def processar(censo_path: str, var_path: str):
+    selecionar_variaveis(censo_path, var_path)
     #implementar funções de calcular.py aq
 
 import numpy as np
 import pandas as pd 
 from girth import twopl_mml, ability_eap
 
-#var_path = 'bases/variaveis_censo.txt'
-#mat_path = 'bases/matriculas_censo.csv'
-#output_path = 'resultados/'
 
 def selecionar_variaveis(censo_path:str, var_path: str):
     print("Selecionando variáveis...")
@@ -133,7 +130,5 @@ def calcular_estimativas(df:pd.DataFrame):
 def exportar_csv(df:pd.DataFrame):
     print("Exportando...")
     df.to_csv(f'{output_path}/filtrado.csv',index=False)
-
-selecionar_variaveis()
 
 
