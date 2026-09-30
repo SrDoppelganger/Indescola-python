@@ -26,6 +26,7 @@ def filtrar_escolas(df:pd.DataFrame):
     agregar_variaveis(df)
 
 #Substituir por np.loc()?
+#Deixar mais genérico?
 def agregar_variaveis(df:pd.DataFrame):
     print("Agregando Variáveis...")
     df['recode_abastecimento_agua'] = np.where(
