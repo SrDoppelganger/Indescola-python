@@ -82,19 +82,54 @@ def calcular_parametros(df:pd.DataFrame):
     cols_itens = [c for c in df.columns if c.startswith('IN_') or c.startswith('recode_')]
     df_calc = df[cols_itens].fillna(0).astype(int)
 
+    #Pega uma amostra generosa ao inves de processar todas as escolas de uma vez
+    escolas_total = len(df_calc)
+    tam_amostra = min(1000, escolas_total)
+    np.random.seed(42)
+    amostragem_idx = np.random.choice(escolas_total, size=tam_amostra, replace=False)
+
+    df_amostra = df_calc.iloc[amostragem_idx]
+
+    #remove colunas sem variância
+    var_amostra = df_amostra.std(axis=0)
+    itens_validos = var_amostra[var_amostra>0].index.tolist()
+
+    df_amostra = df_amostra[itens_validos]
+    df_calc = df_calc[itens_validos]
+
+
+    #transposição da matriz para ficar no formato da biblioteca (resp x item)
+    respostas = df_amostra.values.T
+
+    estimativas = twopl_mml(respostas)
+    disc = estimativas['Discrimination'].flatten()
+    diff = estimativas['Difficulty'].flatten()
+
+    df_params = pd.DataFrame({
+        'Questao': itens_validos,
+        'Discriminação': disc,
+        'Dificuldade': diff
+    })
+
+    df_params.to_csv(f'resultados/parametros.csv')
+
+    respostas_total = df_calc.values.T
+    theta = ability_eap(respostas_total, diff, disc).flatten()
+
+    escore_infra = (theta * 10) + 50
+
+    df_resultado = pd.DataFrame({
+        'CO_ENTIDADE':df['CO_ENTIDADE'].values,
+        'theta_bruto':theta,
+        'indice_infraestrutura':escore_infra
+    })
+
+    exportar_csv(df_calc, df_resultado)
     #TODO adicionar moto calculo
 
-    calcular_estimativas(df)
-
-#Fica quabrando virando array 1D T .T
-def calcular_estimativas(df:pd.DataFrame):
-    print("Calculando estimativas para cada questão...")
-     
-
-    exportar_csv(df)
-
-def exportar_csv(df:pd.DataFrame):
+def exportar_csv(df:pd.DataFrame, df_resultado:pd.DataFrame):
     print("Exportando...")
     df.to_csv(f'resultados/filtrado.csv',index=False)
+    df_resultado.to_csv(f'resultado/resultado.csv',index=False)
 
 
