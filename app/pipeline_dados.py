@@ -20,9 +20,9 @@ def selecionar_variaveis(censo_path:str, var_path: str):
 def filtrar_escolas(df:pd.DataFrame):
     print("Filtrando Escolas em atividade...")
     #remove escolas privadas
-    df.drop(df[df['TP_DEPENDENCIA'] == 4].index, inplace=True)
+    df = df[df['TP_DEPENDENCIA'] != 4].copy() #tira o SettingWithCopy Warning ;3
     #mantém SOMENTE escolas em atividade
-    df = df[df['TP_SITUACAO_FUNCIONAMENTO'] == 1]
+    df = df[df['TP_SITUACAO_FUNCIONAMENTO'] == 1].copy()
 
     agregar_variaveis(df)
 
@@ -30,6 +30,9 @@ def filtrar_escolas(df:pd.DataFrame):
 #Deixar mais genérico?
 def agregar_variaveis(df:pd.DataFrame):
     print("Agregando Variáveis...")
+
+    df = df.copy()
+
     df['recode_abastecimento_agua'] = np.where(
             ((df['IN_AGUA_REDE_PUBLICA'] == 1) | (df['IN_AGUA_POCO_ARTESIANO'] == 1) | (df['IN_AGUA_CACIMBA'] == 1) | (df['IN_AGUA_FONTE_RIO'] == 1) | (df['IN_AGUA_CARRO_PIPA'] == 1)) & (df['IN_AGUA_INEXISTENTE'] == 0)
             ,1,0)
@@ -59,64 +62,27 @@ def agregar_variaveis(df:pd.DataFrame):
         ,1,0
     )
     
-
     df['recode_internet'] = np.where(
         (df['IN_INTERNET'] == 1) | (df['IN_INTERNET_ALUNOS'] == 1) | (df['IN_INTERNET_ADMINISTRATIVO'] == 1) | (df['IN_INTERNET_APRENDIZAGEM'] == 1) | (df['IN_INTERNET_COMUNIDADE'] == 1)
         ,1,0)
 
-    remover_colunas(df)
+    drop_cols = ['IN_AGUA_REDE_PUBLICA','IN_AGUA_POCO_ARTESIANO','IN_AGUA_CACIMBA','IN_AGUA_FONTE_RIO','IN_AGUA_CARRO_PIPA','IN_AGUA_INEXISTENTE',
+                'IN_ENERGIA_GERADOR_FOSSIL','IN_ENERGIA_RENOVAVEL','IN_ENERGIA_REDE_PUBLICA','IN_ENERGIA_INEXISTENTE','IN_ESGOTO_REDE_PUBLICA',
+                'IN_ESGOTO_FOSSA_SEPTICA','IN_ESGOTO_FOSSA_COMUM','IN_ESGOTO_FOSSA','IN_ESGOTO_INEXISTENTE','IN_TRATAMENTO_LIXO_SEPARACAO','IN_TRATAMENTO_LIXO_REUTILIZA',
+                'IN_TRATAMENTO_LIXO_RECICLAGEM','IN_TRATAMENTO_LIXO_INEXISTENTE','IN_INTERNET','IN_INTERNET_ALUNOS','IN_INTERNET_ADMINISTRATIVO','IN_INTERNET_APRENDIZAGEM',
+                'IN_INTERNET_COMUNIDADE','IN_PATIO_COBERTO','IN_PATIO_DESCOBERTO']
+
+    df = df.drop(columns=[c for c in drop_cols if c in df.columns])
+
+    calcular_parametros(df)
     
-#Talvez seja preferível MANTER as colunas, apenas ocultá-las
-def remover_colunas(df: pd.DataFrame):
-    #separa dados de contextualização com os dados binário para calcular
-    df_contexto = df.loc[:,['NU_ANO_CENSO','TP_SITUACAO_FUNCIONAMENTO']]
-    df_calc = df.loc[:,'IN_AGUA_POTAVEL':]
-
-
-    df_calc = df_calc.drop(columns=['IN_AGUA_REDE_PUBLICA','IN_AGUA_POCO_ARTESIANO','IN_AGUA_CACIMBA','IN_AGUA_FONTE_RIO','IN_AGUA_CARRO_PIPA','IN_AGUA_INEXISTENTE',
-                          'IN_ENERGIA_GERADOR_FOSSIL','IN_ENERGIA_RENOVAVEL','IN_ENERGIA_REDE_PUBLICA','IN_ENERGIA_INEXISTENTE','IN_ESGOTO_REDE_PUBLICA',
-                          'IN_ESGOTO_FOSSA_SEPTICA','IN_ESGOTO_FOSSA_COMUM','IN_ESGOTO_FOSSA','IN_ESGOTO_INEXISTENTE','IN_TRATAMENTO_LIXO_SEPARACAO','IN_TRATAMENTO_LIXO_REUTILIZA',
-                          'IN_TRATAMENTO_LIXO_RECICLAGEM','IN_TRATAMENTO_LIXO_INEXISTENTE','IN_INTERNET','IN_INTERNET_ALUNOS','IN_INTERNET_ADMINISTRATIVO','IN_INTERNET_APRENDIZAGEM',
-                          'IN_INTERNET_COMUNIDADE','IN_PATIO_COBERTO','IN_PATIO_DESCOBERTO'])
-
-    df_calc = df_calc.fillna(0).astype(int)
-    calcular_parametros(df_calc)
-
 
 def calcular_parametros(df:pd.DataFrame):
-    #calcula os parametros de Dificuldade e Discriminação para cada questão
-    print("Calculando parâmetros...")
+    #garante que vai pegar somente as colunas dicotomizadas
+    cols_itens = [c for c in df.columns if c.startswith('IN_') or c.startswith('recode_')]
+    df_calc = df[cols_itens].fillna(0).astype(int)
 
-    #verifica e remove colunas sem variancia nenhuma (quebra a lib)
-    variancia = df.std(axis=0)
-    validas = variancia[variancia > 0].index
-    df = df[validas]
-
-    respostas = df.values.T
-
-    #Amostragem pra esse krl n crashar
-    total_escolas = respostas.shape[1]
-    tam_amostra = min(5000, total_escolas)
-    
-
-    np.random.seed(42)
-    amostragem = np.random.choice(total_escolas, size=tam_amostra, replace=False)
-    resp_amostra = respostas[:,amostragem]
-
-    #PLACEHOLDER
-    estimativas = twopl_mml(resp_amostra)
-
-    disc = estimativas['Discrimination']
-    dif = estimativas['Difficulty']
-
-    df_params = pd.DataFrame({
-        'Questao': validas,
-        'Discriminação': disc,
-        'Dificuldade': dif
-    })
-
-    print("Exportando parâmetros A e B por questão...")
-    df_params.to_csv(f'{output_path}/parametros.csv',index=False)
+    #TODO adicionar moto calculo
 
     calcular_estimativas(df)
 
@@ -129,6 +95,6 @@ def calcular_estimativas(df:pd.DataFrame):
 
 def exportar_csv(df:pd.DataFrame):
     print("Exportando...")
-    df.to_csv(f'{output_path}/filtrado.csv',index=False)
+    df.to_csv(f'resultados/filtrado.csv',index=False)
 
 
