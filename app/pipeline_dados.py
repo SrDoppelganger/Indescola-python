@@ -84,7 +84,7 @@ def calcular_parametros(df:pd.DataFrame):
 
     #Pega uma amostra generosa ao inves de processar todas as escolas de uma vez
     escolas_total = len(df_calc)
-    tam_amostra = min(1000, escolas_total)
+    tam_amostra = min(5000, escolas_total)
     np.random.seed(42)
     amostragem_idx = np.random.choice(escolas_total, size=tam_amostra, replace=False)
 
@@ -92,7 +92,7 @@ def calcular_parametros(df:pd.DataFrame):
 
     #remove colunas sem variância
     var_amostra = df_amostra.std(axis=0)
-    itens_validos = var_amostra[var_amostra>0].index.tolist()
+    itens_validos = var_amostra[(var_amostra >= 0.01) & (var_amostra <= 0.99)].index.tolist()
 
     df_amostra = df_amostra[itens_validos]
     df_calc = df_calc[itens_validos]
@@ -102,8 +102,8 @@ def calcular_parametros(df:pd.DataFrame):
     respostas = df_amostra.values.T
 
     estimativas = twopl_mml(respostas)
-    disc = estimativas['Discrimination'].flatten()
-    diff = estimativas['Difficulty'].flatten()
+    disc = estimativas['Discrimination'].ravel()
+    diff = estimativas['Difficulty'].ravel()
 
     df_params = pd.DataFrame({
         'Questao': itens_validos,
@@ -114,22 +114,28 @@ def calcular_parametros(df:pd.DataFrame):
     df_params.to_csv(f'resultados/parametros.csv')
 
     respostas_total = df_calc.values.T
-    theta = ability_eap(respostas_total, diff, disc).flatten()
-
+    
+    theta = ability_eap(respostas_total, diff, disc).ravel()
+    
+    
     escore_infra = (theta * 10) + 50
 
+    if 'CO_ENTIDADE' in df.columns:
+        co_entidade = df['CO_ENTIDADE'].values.ravel()
+    else:
+        co_entidade = np.arange(escolas_total)
+
     df_resultado = pd.DataFrame({
-        'CO_ENTIDADE':df['CO_ENTIDADE'].values,
+        'CO_ENTIDADE':co_entidade,
         'theta_bruto':theta,
         'indice_infraestrutura':escore_infra
     })
 
-    exportar_csv(df_calc, df_resultado)
-    #TODO adicionar moto calculo
+    exportar_csv(df_calc,df_resultado)
 
 def exportar_csv(df:pd.DataFrame, df_resultado:pd.DataFrame):
     print("Exportando...")
     df.to_csv(f'resultados/filtrado.csv',index=False)
-    df_resultado.to_csv(f'resultado/resultado.csv',index=False)
+    df_resultado.to_csv(f'resultados/resultado.csv',index=False)
 
 
