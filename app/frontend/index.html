@@ -15,51 +15,151 @@
       </p>
     </header>
 
-    <section class="picker">
-      <button id="choose-btn" class="choose-btn" type="button">
-        Escolha um arquivo&hellip;
+    <section class="inputs">
+      <div class="input-row" data-slot="censo_csv">
+        <div class="input-row__top">
+          <span class="input-row__label">Censo</span>
+          <button class="input-row__btn" type="button">Escolher...</button>
+        </div>
+
+        <section class="pipeline" aria-label="Validation pipeline">
+          <div class="pipeline__step" data-step="structural" data-state="idle">
+            <span class="pipeline__index">1</span>
+            <span class="pipeline__label">Estrutural</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="empty" data-state="idle">
+            <span class="pipeline__index">2</span>
+            <span class="pipeline__label">Vazio</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="pipeline" data-state="idle">
+            <span class="pipeline__index">3</span>
+            <span class="pipeline__label">pipeline</span>
+            <span class="pipeline__status"></span>
+          </div>
+        </section>
+
+        <section class="result" hidden>
+          <div class="result__row">
+            <span class="result__key">arquivo</span>
+            <span class="result__value result-file"></span>
+          </div>
+          <div class="result__row">
+            <span class="result__key">status</span>
+            <span class="result__value result-status"></span>
+          </div>
+          <div class="result__row result__row--reason">
+            <span class="result__key">motivo</span>
+            <span class="result__value result-reason"></span>
+          </div>
+        </section>
+      </div>
+
+      <div class="input-row" data-slot="matriculas_csv">
+        <div class="input-row__top">
+          <span class="input-row__label">Matrícula</span>
+          <button class="input-row__btn" type="button">Escolher...</button>
+        </div>
+
+        <section class="pipeline" aria-label="Validation pipeline">
+          <div class="pipeline__step" data-step="structural" data-state="idle">
+            <span class="pipeline__index">1</span>
+            <span class="pipeline__label">Estrutural</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="empty" data-state="idle">
+            <span class="pipeline__index">2</span>
+            <span class="pipeline__label">Vazio</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="pipeline" data-state="idle">
+            <span class="pipeline__index">3</span>
+            <span class="pipeline__label">pipeline</span>
+            <span class="pipeline__status"></span>
+          </div>
+        </section>
+
+        <section class="result" hidden>
+          <div class="result__row">
+            <span class="result__key">arquivo</span>
+            <span class="result__value result-file"></span>
+          </div>
+          <div class="result__row">
+            <span class="result__key">status</span>
+            <span class="result__value result-status"></span>
+          </div>
+          <div class="result__row result__row--reason">
+            <span class="result__key">motivo</span>
+            <span class="result__value result-reason"></span>
+          </div>
+        </section>
+      </div>
+
+      <div class="input-row" data-slot="variaveis_txt">
+        <div class="input-row__top">
+          <span class="input-row__label">Variáveis (.txt)</span>
+          <button class="input-row__btn" type="button">Escolher...</button>
+        </div>
+
+        <section class="pipeline" aria-label="Validation pipeline">
+          <div class="pipeline__step" data-step="structural" data-state="idle">
+            <span class="pipeline__index">1</span>
+            <span class="pipeline__label">Estrutural</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="empty" data-state="idle">
+            <span class="pipeline__index">2</span>
+            <span class="pipeline__label">Vazio</span>
+            <span class="pipeline__status"></span>
+          </div>
+          <div class="pipeline__connector"></div>
+          <div class="pipeline__step" data-step="pipeline" data-state="idle">
+            <span class="pipeline__index">3</span>
+            <span class="pipeline__label">pipeline</span>
+            <span class="pipeline__status"></span>
+          </div>
+        </section>
+
+        <section class="result" hidden>
+          <div class="result__row">
+            <span class="result__key">arquivo</span>
+            <span class="result__value result-file"></span>
+          </div>
+          <div class="result__row">
+            <span class="result__key">status</span>
+            <span class="result__value result-status"></span>
+          </div>
+          <div class="result__row result__row--reason">
+            <span class="result__key">motivo</span>
+            <span class="result__value result-reason"></span>
+          </div>
+        </section>
+      </div>
+    </section>
+
+    <section class="output">
+      <div class="input-row__top">
+        <span class="input-row__label">Pasta de saída</span>
+        <button id="output-btn" class="input-row__btn" type="button">Escolher...</button>
+      </div>
+      <div id="output-path" class="input-row__file">Nenhuma pasta escolhida</div>
+    </section>
+
+    <section class="submit">
+      <button id="submit-btn" class="submit-btn" type="button" disabled>
+        Calcular
       </button>
-      <span id="picker-hint" class="picker-hint">Atualmente suporta: .csv</span>
+      <p id="submit-hint" class="submit-hint">
+        Escolha os três arquivos e uma pasta de saída para habilitar.
+      </p>
+      <div id="submit-result" class="submit-result" hidden></div>
     </section>
-
-    <section class="pipeline" aria-label="Validation pipeline">
-      <div class="pipeline__step" id="step-structural" data-state="idle">
-        <span class="pipeline__index">1</span>
-        <span class="pipeline__label">Estrutural</span>
-        <span class="pipeline__status"></span>
-      </div>
-      <div class="pipeline__connector"></div>
-      <div class="pipeline__step" id="step-empty" data-state="idle">
-        <span class="pipeline__index">2</span>
-        <span class="pipeline__label">Vazio</span>
-        <span class="pipeline__status"></span>
-      </div>
-      <div class="pipeline__connector"></div>
-      <div class="pipeline__step" id="step-pipeline" data-state="idle">
-        <span class="pipeline__index">3</span>
-        <span class="pipeline__label">pipeline</span>
-        <span class="pipeline__status"></span>
-      </div>
-    </section>
-
-    <section id="result" class="result" hidden>
-      <div class="result__row">
-        <span class="result__key">arquivo</span>
-        <span class="result__value" id="result-file"></span>
-      </div>
-      <div class="result__row">
-        <span class="result__key">status</span>
-        <span class="result__value" id="result-status"></span>
-      </div>
-      <div class="result__row result__row--reason">
-        <span class="result__key">razão</span>
-        <span class="result__value" id="result-reason"></span>
-      </div>
-    </section>
-
-    <p id="empty-state" class="empty-state">
-      Nenhum arquivo checado ainda. Escolha um para ver o resultado aqui.
-    </p>
   </main>
 
   <script src="app.js"></script>
