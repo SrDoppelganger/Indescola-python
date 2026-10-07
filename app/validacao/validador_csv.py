@@ -3,6 +3,7 @@ import io
 from pathlib import Path
 
 from .resultado import ResultadoValidacao, ok, falha
+from .utils_encoding import decodificar_texto
 
 def validar(file_path: str) -> ResultadoValidacao:
     path = Path(file_path)
@@ -10,20 +11,20 @@ def validar(file_path: str) -> ResultadoValidacao:
     try:
         raw = path.read_bytes()
     except OSError as exc:
-        return falha("estrutural", f"Arquivo nao pode ser lido: ${exc}")
+        return falha("estrutural", f"Arquivo nao pode ser lido: {exc}")
 
     if len(raw) == 0:
         return falha("vazio", "Arquivo vazio(zero bytes).")
 
     try:
-        texto = raw.decode("latin-1")
+        texto, formato = decodificar_texto(raw)
     except UnicodeDecodeError:
-        return falha("estrutural", "Arquivo invalido como texto e nao pode ser lido como CSV.")
+        return falha("estrutural", "Arquivo invalido em formatos suportados e nao pode ser lido como CSV.")
 
     try:
         linhas = list(csv.reader(io.StringIO(texto), strict=True))
     except csv.Error as exc:
-        return falha("estrutural", f"Arquivo não pode ser lido como CSV: ${exc}")
+        return falha("estrutural", f"Arquivo não pode ser lido como CSV: {exc}")
 
     linhas_nao_vazias = [linha for linha in linhas if any(cell.strip() for cell in linha)]
 
@@ -33,7 +34,7 @@ def validar(file_path: str) -> ResultadoValidacao:
     if len(linhas_nao_vazias) == 1:
         return falha("vazio", "Arquivo contém apenas cabecalho, sem dados.")
 
-    return ok()
+    return ok(f"Arquivo válido como CSV não vazio (formato: {formato}).")
 
 
     
