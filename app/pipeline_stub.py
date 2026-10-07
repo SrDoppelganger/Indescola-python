@@ -11,15 +11,15 @@ class ArquivosPipeline(TypedDict):
     formato: str
     resultado_validacao: ResultadoValidacao
 
-#TODO substituir por input do usuário
-var_path = 'bases/variaveis.txt'
-mat_path = 'bases/matriculas_censo.csv'
-output_path = 'resultados/'
 
 #adicionar coiso de backend aq
 
 def enviar_para_pipeline(file_path: str, formato_arquivo: str, resultado_validacao: ResultadoValidacao) -> None:
-    pipeline_dados.processar(file_path, var_path)
+    pass
 
 def novo_enviar_para_pipeline(arquivos: List[ArquivosPipeline], pasta_saida: str) -> None:
-    pass
+    censo_path: str = arquivos[0].get('path')
+    mat_path: str = arquivos[1].get('path')
+    var_path: str = arquivos[2].get('path')
+
+    pipeline_dados.processar(censo_path, var_path, mat_path, pasta_saida)

@@ -1,7 +1,7 @@
 #Pipeline de processamento backends
-def processar(censo_path: str, var_path: str):
+def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
     selecionar_variaveis(censo_path, var_path)
-    #implementar funções de calcular.py aq
+    #TODO implementar ponderação por matricula e pasta de saída
 
 import numpy as np
 import pandas as pd 
@@ -10,7 +10,7 @@ from girth import twopl_mml, ability_eap
 
 def selecionar_variaveis(censo_path:str, var_path: str):
     print("Selecionando variáveis...")
-    with open(var_path, 'r') as file:
+    with open(var_path, 'r', encoding="utf-8-sig") as file:
         var_list = [line.strip() for line in file]
 
     df = pd.read_csv(censo_path, sep=';',encoding="latin1", usecols=var_list)
@@ -125,8 +125,13 @@ def calcular_parametros(df:pd.DataFrame):
     else:
         co_entidade = np.arange(escolas_total)
 
+
+    #TODO add municipio
     df_resultado = pd.DataFrame({
         'CO_ENTIDADE':co_entidade,
+        'NO_ENTIDADE':df['NO_ENTIDADE'].values.ravel(),
+        'NO_MUNICIPIO':df['NO_MUNICIPIO'].values.ravel(),
+        'SG_UF':df['SG_UF'].values.ravel(),
         'theta_bruto':theta,
         'indice_infraestrutura':escore_infra
     })
