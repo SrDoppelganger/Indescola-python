@@ -15,8 +15,6 @@ def selecionar_variaveis():
     df = pd.read_csv(censo_path, sep=';',encoding="latin1", usecols=var_list)
     filtrar_escolas(df)
 
-#BACKEND MODULE
-
 def filtrar_escolas(df:pd.DataFrame):
     print("Filtrando Escolas em atividade...")
     #remove escolas privadas

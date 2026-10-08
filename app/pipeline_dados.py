@@ -1,11 +1,17 @@
-#Pipeline de processamento backends
-def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
-    selecionar_variaveis(censo_path, var_path)
-    #TODO implementar ponderação por matricula e pasta de saída
-
 import numpy as np
 import pandas as pd 
 from girth import twopl_mml, ability_eap
+
+
+#Pipeline de processamento backend
+def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
+        
+    df = selecionar_variaveis(censo_path, var_path)
+    df = filtrar_escolas(df)
+    df = agregar_variaveis(df)
+    df_calc, df_resultado, df_params =calcular_parametros(df)
+    exportar_csv(df_calc,df_resultado,df_params,output_path)
+
 
 
 def selecionar_variaveis(censo_path:str, var_path: str):
@@ -14,7 +20,7 @@ def selecionar_variaveis(censo_path:str, var_path: str):
         var_list = [line.strip() for line in file]
 
     df = pd.read_csv(censo_path, sep=';',encoding="latin1", usecols=var_list)
-    filtrar_escolas(df)
+    return df
 
 
 def filtrar_escolas(df:pd.DataFrame):
@@ -24,10 +30,10 @@ def filtrar_escolas(df:pd.DataFrame):
     #mantém SOMENTE escolas em atividade
     df = df[df['TP_SITUACAO_FUNCIONAMENTO'] == 1].copy()
 
-    agregar_variaveis(df)
+    return df
 
 #Substituir por np.loc()?
-#Deixar mais genérico?
+#Deixar mais genérico? sim.
 def agregar_variaveis(df:pd.DataFrame):
     print("Agregando Variáveis...")
 
@@ -74,7 +80,7 @@ def agregar_variaveis(df:pd.DataFrame):
 
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
-    calcular_parametros(df)
+    return df
     
 
 def calcular_parametros(df:pd.DataFrame):
@@ -111,8 +117,6 @@ def calcular_parametros(df:pd.DataFrame):
         'Dificuldade': diff
     })
 
-    df_params.to_csv(f'resultados/parametros.csv')
-
     respostas_total = df_calc.values.T
     
     theta = ability_eap(respostas_total, diff, disc).ravel()
@@ -126,7 +130,6 @@ def calcular_parametros(df:pd.DataFrame):
         co_entidade = np.arange(escolas_total)
 
 
-    #TODO add municipio
     df_resultado = pd.DataFrame({
         'CO_ENTIDADE':co_entidade,
         'NO_ENTIDADE':df['NO_ENTIDADE'].values.ravel(),
@@ -136,11 +139,13 @@ def calcular_parametros(df:pd.DataFrame):
         'indice_infraestrutura':escore_infra
     })
 
-    exportar_csv(df_calc,df_resultado)
+    #n consegui botar isso na pipeline AINDA T .T
+    return df_calc,df_resultado,df_params
 
-def exportar_csv(df:pd.DataFrame, df_resultado:pd.DataFrame):
+def exportar_csv(df_calc:pd.DataFrame, df_resultado:pd.DataFrame, df_parametros:pd.DataFrame, output: str):
     print("Exportando...")
-    df.to_csv(f'resultados/filtrado.csv',index=False)
-    df_resultado.to_csv(f'resultados/resultado.csv',index=False)
+    df_calc.to_csv(f'{output}/filtrado.csv',index=False)
+    df_resultado.to_csv(f'{output}/resultado.csv',index=False)
+    df_parametros.to_csv(f'{output}/parametros.csv',index=False)
 
 
