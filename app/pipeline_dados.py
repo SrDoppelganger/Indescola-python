@@ -6,21 +6,29 @@ from girth import twopl_mml, ability_eap
 #Pipeline de processamento backend
 def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
         
-    df = selecionar_variaveis(censo_path, var_path)
-    df = filtrar_escolas(df)
-    df = agregar_variaveis(df)
-    df_calc, df_resultado, df_params =calcular_parametros(df)
+    df_esc, df_mat = selecionar_variaveis(censo_path, var_path, mat_path)
+    df_esc = filtrar_escolas(df_esc)
+    df_esc = agregar_variaveis(df_esc)
+    df_calc, df_score, df_params =calcular_parametros(df_esc)
+    df_resultado = associar_matriculas(df_score,df_mat)
     exportar_csv(df_calc,df_resultado,df_params,output_path)
 
 
 
-def selecionar_variaveis(censo_path:str, var_path: str):
+def selecionar_variaveis(censo_path:str, var_path: str, mat_path):
     print("Selecionando variáveis...")
+
+    #TEMP -> colocar como input do usuário dps
+    mat_cols = ['CO_ENTIDADE','QT_MAT_BAS','QT_MAT_MED']
+
+    
     with open(var_path, 'r', encoding="utf-8-sig") as file:
         var_list = [line.strip() for line in file]
 
+
     df = pd.read_csv(censo_path, sep=';',encoding="latin1", usecols=var_list)
-    return df
+    df_mat = pd.read_csv(mat_path, sep=';', encoding="latin1", usecols=mat_cols)
+    return df, df_mat
 
 
 def filtrar_escolas(df:pd.DataFrame):
@@ -78,6 +86,8 @@ def agregar_variaveis(df:pd.DataFrame):
                 'IN_TRATAMENTO_LIXO_RECICLAGEM','IN_TRATAMENTO_LIXO_INEXISTENTE','IN_INTERNET','IN_INTERNET_ALUNOS','IN_INTERNET_ADMINISTRATIVO','IN_INTERNET_APRENDIZAGEM',
                 'IN_INTERNET_COMUNIDADE','IN_PATIO_COBERTO','IN_PATIO_DESCOBERTO']
 
+
+    #TODO implementar separação por etapa de ensino
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
     return df
@@ -121,8 +131,11 @@ def calcular_parametros(df:pd.DataFrame):
     
     theta = ability_eap(respostas_total, diff, disc).ravel()
     
-    
+
+    #TODO ponderar por matrícula
     escore_infra = (theta * 10) + 50
+
+    #escore_ponderado = escore_infra/soma_das_matriculas
 
     if 'CO_ENTIDADE' in df.columns:
         co_entidade = df['CO_ENTIDADE'].values.ravel()
@@ -142,9 +155,15 @@ def calcular_parametros(df:pd.DataFrame):
     #n consegui botar isso na pipeline AINDA T .T
     return df_calc,df_resultado,df_params
 
+def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
+    print("Associando Matriculas")
+
+    df = pd.merge(df_escolas, df_matriculas, on='CO_ENTIDADE', how='inner')
+    return df
+
 def exportar_csv(df_calc:pd.DataFrame, df_resultado:pd.DataFrame, df_parametros:pd.DataFrame, output: str):
     print("Exportando...")
-    df_calc.to_csv(f'{output}/filtrado.csv',index=False)
+    df_calc.to_csv(f'{output}/respostas.csv',index=False)
     df_resultado.to_csv(f'{output}/resultado.csv',index=False)
     df_parametros.to_csv(f'{output}/parametros.csv',index=False)
 
