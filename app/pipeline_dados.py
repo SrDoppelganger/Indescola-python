@@ -135,7 +135,7 @@ def calcular_parametros(df:pd.DataFrame):
     #TODO ponderar por matrícula
     escore_infra = (theta * 10) + 50
 
-    #escore_ponderado = escore_infra/soma_das_matriculas
+    #escore_ponderado = escore_etapa * mat_etapa /soma_das_matriculas
 
     if 'CO_ENTIDADE' in df.columns:
         co_entidade = df['CO_ENTIDADE'].values.ravel()
@@ -159,6 +159,7 @@ def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
     print("Associando Matriculas")
 
     df = pd.merge(df_escolas, df_matriculas, on='CO_ENTIDADE', how='inner')
+    df['Total Matrículas'] = df['QT_MAT_BAS'] + df['QT_MAT_MED']
     return df
 
 def exportar_csv(df_calc:pd.DataFrame, df_resultado:pd.DataFrame, df_parametros:pd.DataFrame, output: str):
