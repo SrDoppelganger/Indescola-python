@@ -30,7 +30,15 @@ if bool(var_agg):
     cols = list(var_agg.values())
 
     for key, value in var_agg.items():
-        bd[f"recode_{key}"] = [0,0,0,0]
+        recode_values = []
+        cols = bd[value]
+
+        for index, row in cols.iterrows():
+            print(row)
+        
+        print(cols)
+        bd[f"recode_{key}"] = [0,0,0,0] # <- colocar ngc np.where aq dps de processar tudo
+        
 
     #greg = bd[cols[0]]
-    print(bd)
+    #print(bd)
