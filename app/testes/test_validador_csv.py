@@ -7,8 +7,6 @@ from validacao import validador_csv, validador_txt
 
 PASTA_TESTES = Path(__file__).parent / "arquivos"
 
-PATHS_PADRAO = ["censo.csv", "matriculas.csv", "variaveis.txt"]
-
 def write(tmp_path, nome, conteudo: bytes) -> str:
     path = tmp_path / nome
     path.write_bytes(conteudo)
@@ -70,5 +68,12 @@ def test_variaveis_txt_valido():
     path = Path(PASTA_TESTES / "variaveis.txt")
     assert path.is_file() is True
     resultado = validador_txt.validar(path)
+    assert resultado.valido is True
+    assert resultado.fase is None
+
+def test_parametros_csv_valido():
+    path = Path(PASTA_TESTES / "parametros.csv")
+    assert path.is_file() is True
+    resultado = validador_csv.validar(path)
     assert resultado.valido is True
     assert resultado.fase is None
