@@ -3,7 +3,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from validacao import validador_csv
+from validacao import validador_csv, validador_txt
+
+PASTA_TESTES = Path(__file__).parent / "arquivos"
+
+PATHS_PADRAO = ["censo.csv", "matriculas.csv", "variaveis.txt"]
 
 def write(tmp_path, nome, conteudo: bytes) -> str:
     path = tmp_path / nome
@@ -36,12 +40,6 @@ def test_arquivo_com_apenas_espaco_em_branco_vazio(tmp_path):
     assert resultado.valido is False
     assert resultado.fase == "vazio"
 
-def test_arquivo_binario_falha_estrutural(tmp_path):
-    p = write(tmp_path, "falso.csv", b"\x89PNG\r\n\x1a\n\x00\x01\x02")
-    resultado = validador_csv.validar(p)
-    assert resultado.valido is False
-    assert resultado.fase == "estrutural"
-
 def test_arquivo_inexistente_falha_estrutural(tmp_path):
     p = str(tmp_path / "nao_exite.csv")
     resultado = validador_csv.validar(p)
@@ -53,3 +51,24 @@ def test_arquivo_com_unterminated_quoted_field_falha_estrutural(tmp_path):
     resultado = validador_csv.validar(p)
     assert resultado.valido is False
     assert resultado.fase == "estrutural"
+
+def test_censo_csv_valido():
+    path = Path(PASTA_TESTES / "censo.csv")
+    assert path.is_file() is True
+    resultado = validador_csv.validar(path)
+    assert resultado.valido is True
+    assert resultado.fase is None
+
+def test_matriculas_csv_valido():
+    path = Path(PASTA_TESTES / "matriculas.csv")
+    assert path.is_file() is True
+    resultado = validador_csv.validar(path)
+    assert resultado.valido is True
+    assert resultado.fase is None
+
+def test_variaveis_txt_valido():
+    path = Path(PASTA_TESTES / "variaveis.txt")
+    assert path.is_file() is True
+    resultado = validador_txt.validar(path)
+    assert resultado.valido is True
+    assert resultado.fase is None

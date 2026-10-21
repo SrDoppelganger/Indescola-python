@@ -6,6 +6,7 @@ from .resultado import ResultadoValidacao, ok, falha
 from .utils_encoding import decodificar_texto
 
 def validar(file_path: str) -> ResultadoValidacao:
+    """Valida arquivos do formato .csv"""
     path = Path(file_path)
 
     try:

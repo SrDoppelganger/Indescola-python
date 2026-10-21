@@ -7,6 +7,7 @@ from api import Api
 FRONTEND_DIR = Path(__file__).parent / "frontend"
 
 def main():
+    # Criar a instância da Api e chamar a criação de janela do pywebview.
     api = Api()
     webview.create_window(
         title="Validador de Arquivo",
