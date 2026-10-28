@@ -3,4 +3,3 @@ pytest
 pandas
 numpy
 girth
-logging

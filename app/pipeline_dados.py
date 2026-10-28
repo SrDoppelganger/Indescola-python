@@ -1,7 +1,15 @@
 import numpy as np
 import pandas as pd 
 from girth import twopl_mml, ability_eap
+import logging
 
+#configuração de logs
+logging.basicConfig(filename="logs/SysLog.log",filemode="w",format="%(asctime)s - %(levelname)s - %(message)s", level=logging.DEBUG)
+
+logger = logging.getLogger(__name__)
+FileOutputHandler = logging.FileHandler('logs.log')
+
+logger.addHandler(FileOutputHandler)
 
 #Pipeline de processamento backend
 def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
@@ -17,6 +25,7 @@ def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
 
 def selecionar_variaveis(censo_path:str, var_path: str, mat_path):
     print("Selecionando variáveis...")
+    
 
     #TEMP -> colocar como input do usuário dps
     mat_cols = ['CO_ENTIDADE','QT_MAT_BAS','QT_MAT_MED']
@@ -25,9 +34,10 @@ def selecionar_variaveis(censo_path:str, var_path: str, mat_path):
     with open(var_path, 'r', encoding="utf-8-sig") as file:
         var_list = [line.strip() for line in file]
 
-
     df = pd.read_csv(censo_path, sep=';',encoding="latin1", usecols=var_list)
     df_mat = pd.read_csv(mat_path, sep=';', encoding="latin1", usecols=mat_cols)
+
+    logging.info("Variáveis selecionadas com sucesso")
     return df, df_mat
 
 
@@ -38,6 +48,7 @@ def filtrar_escolas(df:pd.DataFrame):
     #mantém SOMENTE escolas em atividade
     df = df[df['TP_SITUACAO_FUNCIONAMENTO'] == 1].copy()
 
+    logging.info("Escolas válidas filtradas com sucesso")
     return df
 
 #Substituir por np.loc()?
@@ -90,6 +101,7 @@ def agregar_variaveis(df:pd.DataFrame):
     #TODO implementar separação por etapa de ensino
     df = df.drop(columns=[c for c in drop_cols if c in df.columns])
 
+    logging.info("Escolas válidas filtradas com sucesso")
     return df
     
 
@@ -152,7 +164,8 @@ def calcular_parametros(df:pd.DataFrame):
         'indice_infraestrutura':escore_infra
     })
 
-    #n consegui botar isso na pipeline AINDA T .T
+
+    logging.info("Calculo TRI realizado com sucesso")
     return df_calc,df_resultado,df_params
 
 def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
@@ -160,6 +173,8 @@ def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
 
     df = pd.merge(df_escolas, df_matriculas, on='CO_ENTIDADE', how='inner')
     df['Total Matrículas'] = df['QT_MAT_BAS'] + df['QT_MAT_MED']
+
+    logging.info("Matriculas associadas foram associadas as escolas com sucesso")
     return df
 
 def exportar_csv(df_calc:pd.DataFrame, df_resultado:pd.DataFrame, df_parametros:pd.DataFrame, output: str):
@@ -167,5 +182,9 @@ def exportar_csv(df_calc:pd.DataFrame, df_resultado:pd.DataFrame, df_parametros:
     df_calc.to_csv(f'{output}/respostas.csv',index=False)
     df_resultado.to_csv(f'{output}/resultado.csv',index=False)
     df_parametros.to_csv(f'{output}/parametros.csv',index=False)
+    logging.info("Processamento completo concluido com sucesso")
+
+
+
 
 
