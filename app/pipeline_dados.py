@@ -29,7 +29,8 @@ def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
     df_esc, df_mat = selecionar_variaveis(censo_path, var_path, mat_path)
     df_esc = filtrar_escolas(df_esc)
     df_esc = agregar_variaveis(df_esc)
-    df_calc, df_score, df_params =calcular_parametros(df_esc)
+    df_mat = separar_etapas(df_mat)
+    df_calc, df_score, df_params = calcular_parametros(df_esc)
     df_resultado = associar_matriculas(df_score,df_mat)
     exportar_csv(df_calc,df_resultado,df_params,output_path)
 
@@ -40,7 +41,7 @@ def selecionar_variaveis(censo_path:str, var_path: str, mat_path):
     
 
     #TEMP -> colocar como input do usuário dps
-    mat_cols = ['CO_ENTIDADE','QT_MAT_BAS','QT_MAT_MED']
+    mat_cols = ['CO_ENTIDADE','QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED']
 
     
     with open(var_path, 'r', encoding="utf-8-sig") as file:
@@ -115,9 +116,37 @@ def agregar_variaveis(df:pd.DataFrame):
 
     logging.info("Escolas válidas filtradas com sucesso")
     return df
+
+def separar_etapas(df_mat: pd.DataFrame):
+    flag_col = [] #<- adicionar como coluna em df_mat
+    #row_flags = ['creche','infantil - pré-escola','fundamental - anos iniciais','fundamental - anos finais','ensino medio']
+    #mats = ['QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED']
+
+    #for index,value in enumerate(mats):
+
+    for index, row in df_mat.iterrows():
+        row_flags = []
+        sep = ";"
+        if row['QT_MAT_INF_CRE'] > 0:
+            row_flags.append("creche")
+        if row['QT_MAT_INF_PRE'] > 0:
+            row_flags.append("infantil - pré-escola")
+        if row['QT_MAT_FUND_AI'] > 0:
+            row_flags.append("fundamental - anos inicias")
+        if row['QT_MAT_FUND_AF'] > 0:
+            row_flags.append("fundamental - anos finais")
+        if row['QT_MAT_MED'] > 0:
+            row_flags.append("ensino médio")
+
+
+        flag_col.append(sep.join(row_flags))
+
+    df_mat['temp_etapas'] = flag_col  
     
+    return df_mat
 
 def calcular_parametros(df:pd.DataFrame):
+    print("calculando parametros...")
     #garante que vai pegar somente as colunas dicotomizadas
     cols_itens = [c for c in df.columns if c.startswith('IN_') or c.startswith('recode_')]
     df_calc = df[cols_itens].fillna(0).astype(int)
@@ -181,10 +210,10 @@ def calcular_parametros(df:pd.DataFrame):
     return df_calc,df_resultado,df_params
 
 def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
-    print("Associando Matriculas")
+    print("Associando Matriculas...")
 
     df = pd.merge(df_escolas, df_matriculas, on='CO_ENTIDADE', how='inner')
-    df['Total Matrículas'] = df['QT_MAT_BAS'] + df['QT_MAT_MED']
+    df['Total Matrículas'] = df['QT_MAT_INF_CRE'] + df['QT_MAT_INF_PRE'] + df['QT_MAT_FUND_AI'] + df['QT_MAT_FUND_AF'] + df['QT_MAT_MED']
 
     logging.info("Matriculas associadas foram associadas as escolas com sucesso")
     return df
