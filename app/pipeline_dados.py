@@ -11,6 +11,18 @@ FileOutputHandler = logging.FileHandler('logs.log')
 
 logger.addHandler(FileOutputHandler)
 
+#TEMPORÁRIO, IMPLEMENTAR JEITO MAIS SOFISTICADO DPS
+#Listas de variáveis específicas
+
+#Talvez seja mais fácil só remover as específicas e deixar o resto das variáveis como gerais
+#base_geral = ['recode_abastecimento_agua','recode_energia','recode_esgoto','recode_destinacao_lixo','recode_tratamento_lixo','recode_patio']
+
+base_tech = ['recode_internet','IN_COMPUTADOR','IN_EQUIP_COPIADORA','IN_EQUIP_IMPRESSORA','IN_EQUIP_IMPRESSORA_MULT',
+             'IN_EQUIP_SCANNER','IN_EQUIP_NENHUM','IN_EQUIP_DVD','IN_DESKTOP_ALUNO','IN_COMP_PORTATIL_ALUNO',
+             'IN_TABLET_ALUNO','IN_ACESSO_INTERNET_COMPUTADOR','IN_ACES_INTERNET_DISP_PESSOAIS','TP_REDE_LOCAL','IN_BANDA_LARGA']
+
+base_infantil = ['IN_BANHEIRO_EI','IN_PARQUE_INFANTIL']
+
 #Pipeline de processamento backend
 def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
         
