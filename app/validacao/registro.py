@@ -4,6 +4,7 @@ from . import validador_csv
 from . import validador_txt
 from .resultado import ResultadoValidacao
 
+# Um validador é um callable que pega uma string como argumento e retorna uma instância de ResultadoValidacao
 Validador = Callable[[str], ResultadoValidacao]
 
 REGISTRO: dict[str, Validador] = {
