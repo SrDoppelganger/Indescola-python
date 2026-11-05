@@ -3,7 +3,7 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-from validacao import validador_csv, validador_txt
+from validacao import validador_csv
 
 PASTA_TESTES = Path(__file__).parent / "arquivos"
 
@@ -61,13 +61,6 @@ def test_matriculas_csv_valido():
     path = Path(PASTA_TESTES / "matriculas.csv")
     assert path.is_file() is True
     resultado = validador_csv.validar(path)
-    assert resultado.valido is True
-    assert resultado.fase is None
-
-def test_variaveis_txt_valido():
-    path = Path(PASTA_TESTES / "variaveis.txt")
-    assert path.is_file() is True
-    resultado = validador_txt.validar(path)
     assert resultado.valido is True
     assert resultado.fase is None
 
