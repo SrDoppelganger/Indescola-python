@@ -119,29 +119,29 @@ def agregar_variaveis(df:pd.DataFrame):
 
 def separar_etapas(df_mat: pd.DataFrame):
     flag_col = [] #<- adicionar como coluna em df_mat
-    #row_flags = ['creche','infantil - pré-escola','fundamental - anos iniciais','fundamental - anos finais','ensino medio']
-    #mats = ['QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED']
-
-    #for index,value in enumerate(mats):
 
     for index, row in df_mat.iterrows():
         row_flags = []
         sep = ";"
+    
         if row['QT_MAT_INF_CRE'] > 0:
-            row_flags.append("creche")
+            row_flags.append("Creche")
         if row['QT_MAT_INF_PRE'] > 0:
-            row_flags.append("infantil - pré-escola")
+            row_flags.append("Infantil - Pré-escola")
         if row['QT_MAT_FUND_AI'] > 0:
-            row_flags.append("fundamental - anos inicias")
+            row_flags.append("Fundamental - Anos Inicias")
         if row['QT_MAT_FUND_AF'] > 0:
-            row_flags.append("fundamental - anos finais")
+            row_flags.append("Fundamental - Anos Finais")
         if row['QT_MAT_MED'] > 0:
-            row_flags.append("ensino médio")
+            row_flags.append("Ensino Médio")
 
+        #checa se a escola n pegou nenhuma flag ;3
+        if not row_flags:
+            row_flags.append("Sem Matrículas")
 
         flag_col.append(sep.join(row_flags))
 
-    df_mat['temp_etapas'] = flag_col  
+    df_mat['Etapas'] = flag_col  
     
     return df_mat
 
