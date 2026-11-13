@@ -194,10 +194,93 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
         'NO_MUNICIPIO': df['CO_MUNICIPIO'].values.ravel(),
         'SG_UF': df['SG_UF'].values.ravel(),
     })
-    
+
     params_list = []
+    rng = np.random.default_rng(42)
 
+    #calcula 2PL POR ETAPA
+    for etapa, cfg in etapas_config.items():
+        col_mat = cfg['col_mat'] #<- pega cada etapa da escola
+        vars_etapa = list(dict.fromkeys(cfg['vars'])) #<- utiliza somente as variáveis da etapa
 
+        mask_etapa = df[col_mat] > 0
+        qtd_escolas_etapa = int(mask_etapa.sum())
+
+        df_resultado[f"theta_{etapa}"] = np.nan
+        df_resultado[f"theta_{etapa}"] = np.nan
+
+        if qtd_escolas_etapa < 30:
+            logging.warning(f"Etapa {etapa} ignorada na calibração: apenas {qtd_escolas_etapa} escolas com matrícula")
+            continue
+
+    
+        df_etapa = df_calc.loc[mask_etapa, vars_etapa]
+
+        #Amostragem
+        tam_amostra = min(5000, qtd_escolas_etapa)
+        amostragem_idx = rng.choice(qtd_escolas_etapa, size=tam_amostra, replace=False)
+        df_amostra = df_etapa[amostragem_idx]
+
+        #remove itens sem variância
+        var_amostra = df_amostra.std(axis=0)
+        itens_validos = var_amostra[var_amostra >= 0.01].index.tolist()
+
+        if len(itens_validos) < 2:
+            logging.warning(f"Etapa {etapa} sem itens válidos o suficiente após filtragem")
+
+        respostas_amostra = df_amostra[itens_validos].values.T
+        estimativas = twopl_mml(respostas_amostra)
+        disc = estimativas['Discrimination'].ravel()
+        diff = estimativas['Difficulty'].ravel()
+
+        params_list.append(pd.DataFrame({
+            'Etapa':etapa,
+            'Questao': itens_validos,
+            'Discriminacao': disc,
+            'Dificuldade': diff
+        }))
+
+        respostas_etapa = df_etapa[itens_validos].values.T
+        theta_etapa = ability_eap(respostas_etapa, diff, disc).ravel()
+        escore_etapa = (theta_etapa * 10) + 50
+
+        df_resultado.loc[mask_etapa, f"theta_{etapa}"] = theta_etapa
+        df_resultado.loc[mask_etapa, f"theta_{etapa}"] = escore_etapa
+
+        logging.info(f"TRI concluida para {etapa} ({qtd_escolas_etapa} escolas, {len(itens_validos)} itens).")
+
+    soma_indice_pond = np.zeros(escolas_total, dtype=float)
+    soma_theta_pond = np.zeros(escolas_total, dtype=float)
+    soma_mats_pond = np.zeros(escolas_total, dtype=float)
+
+    #cálculo ponderado
+    for etapa, cfg in etapas_config.items():
+        col_indice = f'indice_{etapa}'
+        col_theta = f'theta_{etapa}'
+        col_mat = cfg['col_mat']
+
+        valida = df_resultado[col_indice].notna().values
+        mats = np.where(valida, df[col_mat].values, 0.0)
+
+        soma_indice_pond += df_resultado[col_indice].fillna(0).value * mats
+        soma_theta_pond += df_resultado[col_indice].fillna(0).value * mats
+        soma_mats_validas += mats
+
+    df_resultado['Theta_bruto'] = np.where(
+        soma_mats_validas > 0,
+        soma_theta_pond / soma_mats_validas,
+        np.nan
+    )
+    df_resultado['Indice_infraestrutura'] = np.where(
+        soma_mats_validas > 0,
+        soma_indice_pond / soma_mats_validas,
+        np.nan
+    )
+
+    df_params = pd.concat(params_list, ignore_index=True) if params_list else pd.DataFrame(
+        columns=['Etapa','Questao','Discriminação','Dificuldade']
+    )
+    
     logging.info("Calculo TRI realizado com sucesso")
 
     return df_calc,df_resultado,df_params
