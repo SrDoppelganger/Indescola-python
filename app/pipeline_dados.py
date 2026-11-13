@@ -11,18 +11,6 @@ FileOutputHandler = logging.FileHandler('logs.log')
 
 logger.addHandler(FileOutputHandler)
 
-#TEMPORÁRIO, IMPLEMENTAR JEITO MAIS SOFISTICADO DPS
-#Listas de variáveis específicas
-
-#Talvez seja mais fácil só remover as específicas e deixar o resto das variáveis como gerais
-#base_geral = ['recode_abastecimento_agua','recode_energia','recode_esgoto','recode_destinacao_lixo','recode_tratamento_lixo','recode_patio']
-
-base_tech = ['recode_internet','IN_COMPUTADOR','IN_EQUIP_COPIADORA','IN_EQUIP_IMPRESSORA','IN_EQUIP_IMPRESSORA_MULT',
-             'IN_EQUIP_SCANNER','IN_EQUIP_NENHUM','IN_EQUIP_DVD','IN_DESKTOP_ALUNO','IN_COMP_PORTATIL_ALUNO',
-             'IN_TABLET_ALUNO','IN_ACESSO_INTERNET_COMPUTADOR','IN_ACES_INTERNET_DISP_PESSOAIS','TP_REDE_LOCAL','IN_BANDA_LARGA']
-
-base_infantil = ['IN_BANHEIRO_EI','IN_PARQUE_INFANTIL']
-
 #Pipeline de processamento backend
 def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
         
@@ -30,7 +18,7 @@ def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
     df_esc = filtrar_escolas(df_esc)
     df_esc = agregar_variaveis(df_esc)
     df_mat = separar_etapas(df_mat)
-    df_calc, df_score, df_params = calcular_parametros(df_esc)
+    df_calc, df_score, df_params = calcular_parametros(df_esc, df_mat)
     df_resultado = associar_matriculas(df_score,df_mat)
     exportar_csv(df_calc,df_resultado,df_params,output_path)
 
@@ -38,7 +26,6 @@ def processar(censo_path: str, var_path: str, mat_path: str, output_path: str):
 
 def selecionar_variaveis(censo_path:str, var_path: str, mat_path):
     print("Selecionando variáveis...")
-    
 
     #TEMP -> colocar como input do usuário dps
     mat_cols = ['CO_ENTIDADE','QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED']
@@ -145,68 +132,74 @@ def separar_etapas(df_mat: pd.DataFrame):
     
     return df_mat
 
-def calcular_parametros(df:pd.DataFrame):
+def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
     print("calculando parametros...")
+
+    #Listas de variáveis específicas
+    #reverificar se tech é exclusiva para alunos ou para adm (adm tem que ser geral msm)
+    vars_tech = ['recode_internet','IN_COMPUTADOR','IN_EQUIP_COPIADORA','IN_EQUIP_IMPRESSORA','IN_EQUIP_IMPRESSORA_MULT',
+                'IN_EQUIP_SCANNER','IN_EQUIP_NENHUM','IN_EQUIP_DVD','IN_DESKTOP_ALUNO','IN_COMP_PORTATIL_ALUNO',
+                'IN_TABLET_ALUNO','IN_ACESSO_INTERNET_COMPUTADOR','IN_ACES_INTERNET_DISP_PESSOAIS','TP_REDE_LOCAL','IN_BANDA_LARGA']
+
+    vars_infantil = ['IN_BANHEIRO_EI','IN_PARQUE_INFANTIL']
+    mat_cols = ['CO_ENTIDADE','QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED','Etapas']
+    #=====================================================================================================================================
+
+
+    #adiciona as etapas às escolas
+    df = df.merge(df_mat[mat_cols], on='CO_ENTIDADE',how='left').copy()
+    print(df)
+
     #garante que vai pegar somente as colunas dicotomizadas
     cols_itens = [c for c in df.columns if c.startswith('IN_') or c.startswith('recode_')]
-    df_calc = df[cols_itens].fillna(0).astype(int)
+    
+    total_vars = list(dict.fromkeys(cols_itens))
+
+    base_tech = [c for c in vars_tech if c in total_vars]
+    base_inf = [c for c in vars_infantil if c in total_vars]
+    base_geral = [c for c in total_vars if c not in base_tech and c not in base_inf]
+
+    df_calc = df[total_vars].fillna(0).astype(int) #<- df usado na lib em si
+
+    etapas_config = {
+        'creche':{
+            'col_mat': 'QT_MAT_INF_CRE',
+            'vars': base_geral + base_inf
+        },
+        'pre_escola':{
+            'col_mat': 'QT_MAT_INF_PRE',
+            'vars': base_geral + base_inf
+        },
+        'fundamentai_ai':{
+            'col_mat': 'QT_MAT_FUND_AI',
+            'vars': base_geral + base_tech
+        },
+        'fundamental_af':{
+            'col_mat': 'QT_MAT_FUND_AF',
+            'vars': base_geral + base_tech
+        },
+        'ensino_medio':{
+            'col_mat': 'QT_MAT_MED',
+            'vars': base_geral + base_tech
+        },
+    }
 
     #Pega uma amostra generosa ao inves de processar todas as escolas de uma vez
     escolas_total = len(df_calc)
-    tam_amostra = min(5000, escolas_total)
-    np.random.seed(42)
-    amostragem_idx = np.random.choice(escolas_total, size=tam_amostra, replace=False)
-
-    df_amostra = df_calc.iloc[amostragem_idx]
-
-    #remove colunas sem variância
-    var_amostra = df_amostra.std(axis=0)
-    itens_validos = var_amostra[(var_amostra >= 0.01) & (var_amostra <= 0.99)].index.tolist()
-
-    df_amostra = df_amostra[itens_validos]
-    df_calc = df_calc[itens_validos]
-
-
-    #transposição da matriz para ficar no formato da biblioteca (resp x item)
-    respostas = df_amostra.values.T
-
-    estimativas = twopl_mml(respostas)
-    disc = estimativas['Discrimination'].ravel()
-    diff = estimativas['Difficulty'].ravel()
-
-    df_params = pd.DataFrame({
-        'Questao': itens_validos,
-        'Discriminação': disc,
-        'Dificuldade': diff
-    })
-
-    respostas_total = df_calc.values.T
-    
-    theta = ability_eap(respostas_total, diff, disc).ravel()
-    
-
-    #TODO ponderar por matrícula
-    escore_infra = (theta * 10) + 50
-
-    #escore_ponderado = escore_etapa * mat_etapa /soma_das_matriculas
-
-    if 'CO_ENTIDADE' in df.columns:
-        co_entidade = df['CO_ENTIDADE'].values.ravel()
-    else:
-        co_entidade = np.arange(escolas_total)
-
+    co_entidade = df['CO_ENTIDADE'].values.ravel() if 'CO_ENTIDADE' in df.columns else np.arrange(escolas_total)
 
     df_resultado = pd.DataFrame({
-        'CO_ENTIDADE':co_entidade,
-        'NO_ENTIDADE':df['NO_ENTIDADE'].values.ravel(),
-        'NO_MUNICIPIO':df['NO_MUNICIPIO'].values.ravel(),
-        'SG_UF':df['SG_UF'].values.ravel(),
-        'theta_bruto':theta,
-        'indice_infraestrutura':escore_infra
+        'CO_ENTIDADE': co_entidade,
+        'NO_ENTIDADE': df['CO_ENTIDADE'].values.ravel(),
+        'NO_MUNICIPIO': df['CO_MUNICIPIO'].values.ravel(),
+        'SG_UF': df['SG_UF'].values.ravel(),
     })
+    
+    params_list = []
 
 
     logging.info("Calculo TRI realizado com sucesso")
+
     return df_calc,df_resultado,df_params
 
 def associar_matriculas(df_escolas: pd.DataFrame, df_matriculas: pd.DataFrame):
