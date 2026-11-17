@@ -139,7 +139,7 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
     #reverificar se tech é exclusiva para alunos ou para adm (adm tem que ser geral msm)
     vars_tech = ['recode_internet','IN_COMPUTADOR','IN_EQUIP_COPIADORA','IN_EQUIP_IMPRESSORA','IN_EQUIP_IMPRESSORA_MULT',
                 'IN_EQUIP_SCANNER','IN_EQUIP_NENHUM','IN_EQUIP_DVD','IN_DESKTOP_ALUNO','IN_COMP_PORTATIL_ALUNO',
-                'IN_TABLET_ALUNO','IN_ACESSO_INTERNET_COMPUTADOR','IN_ACES_INTERNET_DISP_PESSOAIS','TP_REDE_LOCAL','IN_BANDA_LARGA']
+                'IN_TABLET_ALUNO','IN_ACESSO_INTERNET_COMPUTADOR','IN_ACES_INTERNET_DISP_PESSOAIS','IN_BANDA_LARGA']
 
     vars_infantil = ['IN_BANHEIRO_EI','IN_PARQUE_INFANTIL']
     mat_cols = ['CO_ENTIDADE','QT_MAT_INF_CRE','QT_MAT_INF_PRE','QT_MAT_FUND_AI','QT_MAT_FUND_AF','QT_MAT_MED','Etapas']
@@ -148,7 +148,6 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
 
     #adiciona as etapas às escolas
     df = df.merge(df_mat[mat_cols], on='CO_ENTIDADE',how='left').copy()
-    print(df)
 
     #garante que vai pegar somente as colunas dicotomizadas
     cols_itens = [c for c in df.columns if c.startswith('IN_') or c.startswith('recode_')]
@@ -159,7 +158,7 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
     base_inf = [c for c in vars_infantil if c in total_vars]
     base_geral = [c for c in total_vars if c not in base_tech and c not in base_inf]
 
-    df_calc = df[total_vars].fillna(0).astype(int) #<- df usado na lib em si
+    df_calc = (df[total_vars].fillna(0) == 1).astype(int) #<- df usado na lib em si
 
     etapas_config = {
         'creche':{
@@ -186,12 +185,12 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
 
     #Pega uma amostra generosa ao inves de processar todas as escolas de uma vez
     escolas_total = len(df_calc)
-    co_entidade = df['CO_ENTIDADE'].values.ravel() if 'CO_ENTIDADE' in df.columns else np.arrange(escolas_total)
+    co_entidade = df['CO_ENTIDADE'].values.ravel() if 'CO_ENTIDADE' in df.columns else np.arange(escolas_total)
 
     df_resultado = pd.DataFrame({
         'CO_ENTIDADE': co_entidade,
-        'NO_ENTIDADE': df['CO_ENTIDADE'].values.ravel(),
-        'NO_MUNICIPIO': df['CO_MUNICIPIO'].values.ravel(),
+        'NO_ENTIDADE': df['NO_ENTIDADE'].values.ravel(),
+        'NO_MUNICIPIO': df['NO_MUNICIPIO'].values.ravel(),
         'SG_UF': df['SG_UF'].values.ravel(),
     })
 
@@ -207,7 +206,7 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
         qtd_escolas_etapa = int(mask_etapa.sum())
 
         df_resultado[f"theta_{etapa}"] = np.nan
-        df_resultado[f"theta_{etapa}"] = np.nan
+        df_resultado[f"indice_{etapa}"] = np.nan
 
         if qtd_escolas_etapa < 30:
             logging.warning(f"Etapa {etapa} ignorada na calibração: apenas {qtd_escolas_etapa} escolas com matrícula")
@@ -219,7 +218,7 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
         #Amostragem
         tam_amostra = min(5000, qtd_escolas_etapa)
         amostragem_idx = rng.choice(qtd_escolas_etapa, size=tam_amostra, replace=False)
-        df_amostra = df_etapa[amostragem_idx]
+        df_amostra = df_etapa.iloc[amostragem_idx]
 
         #remove itens sem variância
         var_amostra = df_amostra.std(axis=0)
@@ -245,7 +244,7 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
         escore_etapa = (theta_etapa * 10) + 50
 
         df_resultado.loc[mask_etapa, f"theta_{etapa}"] = theta_etapa
-        df_resultado.loc[mask_etapa, f"theta_{etapa}"] = escore_etapa
+        df_resultado.loc[mask_etapa, f"indice_{etapa}"] = escore_etapa
 
         logging.info(f"TRI concluida para {etapa} ({qtd_escolas_etapa} escolas, {len(itens_validos)} itens).")
 
@@ -262,25 +261,25 @@ def calcular_parametros(df:pd.DataFrame, df_mat:pd.DataFrame):
         valida = df_resultado[col_indice].notna().values
         mats = np.where(valida, df[col_mat].values, 0.0)
 
-        soma_indice_pond += df_resultado[col_indice].fillna(0).value * mats
-        soma_theta_pond += df_resultado[col_indice].fillna(0).value * mats
-        soma_mats_validas += mats
+        soma_indice_pond += df_resultado[col_indice].fillna(0).values * mats
+        soma_theta_pond += df_resultado[col_theta].fillna(0).values * mats
+        soma_mats_pond += mats
 
     df_resultado['Theta_bruto'] = np.where(
-        soma_mats_validas > 0,
-        soma_theta_pond / soma_mats_validas,
+        soma_mats_pond > 0,
+        soma_theta_pond / soma_mats_pond,
         np.nan
     )
     df_resultado['Indice_infraestrutura'] = np.where(
-        soma_mats_validas > 0,
-        soma_indice_pond / soma_mats_validas,
+        soma_mats_pond > 0,
+        soma_indice_pond / soma_mats_pond,
         np.nan
     )
 
     df_params = pd.concat(params_list, ignore_index=True) if params_list else pd.DataFrame(
         columns=['Etapa','Questao','Discriminação','Dificuldade']
     )
-    
+
     logging.info("Calculo TRI realizado com sucesso")
 
     return df_calc,df_resultado,df_params
